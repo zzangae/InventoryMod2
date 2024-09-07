@@ -1,6 +1,7 @@
 ﻿using ModAPI.Attributes;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TheForest.Items;
 using TheForest.Items.Craft;
 using TheForest.Utils;
@@ -10,32 +11,47 @@ namespace InventoryMod2
 {
     internal class Inventory : MonoBehaviour
     {
-        public Vector2 scrollPosition = Vector2.zero;
-        public Vector2 scrollPosition2 = Vector2.zero;
+        public Vector2 scPoWeapons = Vector2.zero;
+        public Vector2 scPoItems = Vector2.zero;
+        public Vector2 scPoRes = Vector2.zero;
+        public Vector2 scPoAnimalHeads = Vector2.zero;
+        public Vector2 scPoOther = Vector2.zero;
+        public Vector2 scPoAll = Vector2.zero;
         private List<Item> listWeapons = new List<Item>();
         private List<Item> listItems = new List<Item>();
         private List<Item> listResources = new List<Item>();
-        private List<Item> listAnimals = new List<Item>();
+        private List<Item> listAnimalHeads = new List<Item>();
         private List<Item> listOther = new List<Item>();
-        private string[] catWeapons = new string[12]
+        private string[] catWeapons = new string[22]
         {
+            "arrow",
+            "axe",            
+            "ArrowFire",
+            "bow",
+            "bomb",
             "club",
-            "axe",
+            "PoisonnedArrow",
             "katana",
             "flaregun",
             "molotov",
             "dynamite",
             "spear",
-            "bomb",
-            "upgraded",
-            "bow",
-            "arrows",
-            "flintlock"
+            "spearRaise",            
+            "upgraded",            
+            "flintlock",
+            "bowFire",            
+            "drawBow",
+            "smallAxe",
+            "repairHammer",
+            "chainSaw",
+            "RecurveBow",
+            "camCorder"
         };
 
-        private string[] catItems = new string[18]
+        private string[] catItems = new string[21]
         {
             "lighter",
+            "lighterIgnite",
             "walkman",
             "torch",
             "firestick",
@@ -52,10 +68,12 @@ namespace InventoryMod2
             "armor",
             "rockbag",
             "stickbag",
-            "metaltintray"
+            "metaltintray",
+            "draw",
+            "pot"
         };
 
-        private string[] catResources = new string[43]
+        private string[] catResources = new string[47]
         {
             "cboard",
             "cloth",
@@ -99,7 +117,11 @@ namespace InventoryMod2
             "meat",
             "rabbit dead",
             "rabbit alive",
-            "log"
+            "log",
+            "map",
+            "generic",
+            "genericWide",
+            "genericHoldPouch"
         };
 
         private string[] catAnimals = new string[1] 
@@ -109,11 +131,15 @@ namespace InventoryMod2
 
         protected bool visible;
         protected GUIStyle labelStyle;
-        private float cY;
+        private float cY1;
         private float cY2;
+        private float cY3;
+        private float cY4;
+        private float cY5;
         private bool sorted;
         private bool skip;
         private string buffer;
+        protected int Tab;
 
         [ExecuteOnGameStart]
         private static void AddMeToScene()
@@ -129,8 +155,8 @@ namespace InventoryMod2
                 this.skip = false;
                 this.buffer = ItemDatabase.Items[index]._name.ToLower();
                 foreach (string catWeapon in this.catWeapons)
-                {
-                    if (this.buffer.Contains(catWeapon) && !this.buffer.Contains("part"))
+                {                    
+                    if (this.buffer.Contains(catWeapon))
                     {
                         this.listWeapons.Add(ItemDatabase.Items[index]);
                         this.skip = true;
@@ -143,7 +169,7 @@ namespace InventoryMod2
                     {
                         if (this.buffer.Contains(catAnimal))
                         {
-                            this.listAnimals.Add(ItemDatabase.Items[index]);
+                            this.listAnimalHeads.Add(ItemDatabase.Items[index]);
                             this.skip = true;
                             break;
                         }
@@ -181,7 +207,7 @@ namespace InventoryMod2
             this.listWeapons.Sort((Comparison<Item>)((x, y) => string.Compare(x._name, y._name)));
             this.listItems.Sort((Comparison<Item>)((x, y) => string.Compare(x._name, y._name)));
             this.listResources.Sort((Comparison<Item>)((x, y) => string.Compare(x._name, y._name)));
-            this.listAnimals.Sort((Comparison<Item>)((x, y) => string.Compare(x._name, y._name)));
+            this.listAnimalHeads.Sort((Comparison<Item>)((x, y) => string.Compare(x._name, y._name)));
             this.listOther.Sort((Comparison<Item>)((x, y) => string.Compare(x._name, y._name)));
         }
 
@@ -191,125 +217,161 @@ namespace InventoryMod2
             {
                 return;
             }
-            GUI.skin = ModAPI.GUI.Skin;
+
+            GUI.skin = ModAPI.Interface.Skin;
             Matrix4x4 matrix = GUI.matrix;
             if (this.labelStyle == null)
             {
                 this.labelStyle = new GUIStyle(GUI.skin.label);
                 this.labelStyle.fontSize = 12;
             }
-            GUI.Box(new Rect(5f, 5f, 700f, 610f), "Inventory menu", GUI.skin.window);
-            this.scrollPosition = GUI.BeginScrollView(new Rect(5f, 45f, 350f, 550f), this.scrollPosition, new Rect(0.0f, 0.0f, 330f, this.cY));
-            this.cY = 25f;
-
-            GUI.Label(new Rect(20f, this.cY, 150f, 20f), "All Items", this.labelStyle);            
-            if (GUI.Button(new Rect(170f, this.cY, 70f, 20f), "Give all"))
-            {
-                for (int i = 0; i < ItemDatabase.Items.Length; i++)
+            GUI.Box(new Rect(5f, 5f, 400f, 430f), "Inventory menu", GUI.skin.window);
+            this.Tab = UnityEngine.GUI.Toolbar(new Rect(5f, 5f, 400f, 30f), this.Tab, new GUIContent[]
                 {
-                    Item item = ItemDatabase.Items[i];
-                    try
+                    new GUIContent("Weapons"),
+                    new GUIContent("Items"),
+                    new GUIContent("Res."),
+                    new GUIContent("Head"),
+                    new GUIContent("Other"),
+                    new GUIContent("All")
+                }, UnityEngine.GUI.skin.GetStyle("Tabs"));
+            if (this.Tab == 0)
+            {
+                this.scPoWeapons = GUI.BeginScrollView(new Rect(5f, 45f, 390f, 370f), this.scPoWeapons, new Rect(0.0f, 0.0f, 330f, this.cY1));
+                this.cY1 = 25f;
+                //Weapons
+                for (int index1 = 0; index1 < this.listWeapons.Count; ++index1)
+                {
+                    GUI.Label(new Rect(20f, this.cY1, 150f, 20f), this.listWeapons[index1]._name, this.labelStyle);
+                    if (this.listWeapons[index1]._name.Equals("Arrows") || this.listWeapons[index1]._name.Equals("ArrowFire") || this.listWeapons[index1]._name.Equals("PoisonnedArrow") || this.listWeapons[index1]._name.Equals("BombTimed") || this.listWeapons[index1]._name.Equals("dynamite") || this.listWeapons[index1]._name.Equals("FlareGunAmmo") || this.listWeapons[index1]._name.Equals("FlintlockAmmo") || this.listWeapons[index1]._name.Equals("Molotov") || this.listWeapons[index1]._name.Equals("CrossbowAmmo"))
                     {
-                        if (item._maxAmount >= 0)
+                        if (GUI.Button(new Rect(210f, this.cY1, 70f, 20f), "Add"))
                         {
-                            LocalPlayer.Inventory.AddItem(item._id, 2000 - LocalPlayer.Inventory.AmountOf(item._id, true), true, false, null);
+                            LocalPlayer.Inventory.AddItem(this.listWeapons[index1]._id, 1, false, false, null);
+                        }
+                        if (GUI.Button(new Rect(290f, this.cY1, 70f, 20f), "MAX"))
+                        {
+                            for (int index2 = 0; index2 < this.listWeapons.Count; ++index2)
+                            {
+                                LocalPlayer.Inventory.AddItem(this.listWeapons[index1]._id, this.listWeapons.Count, false, false, null);
+                            }
                         }
                     }
-                    catch (Exception)
-                    {}
-                }
-            }
-            this.cY = this.cY + 30f;
-
-            GUI.Label(new Rect(20f, this.cY, 150f, 20f), "[ Weapons ]", this.labelStyle);
-            this.cY = this.cY + 30f;
-
-            for (int index1 = 0; index1 < this.listWeapons.Count; ++index1)
-            {
-                GUI.Label(new Rect(20f, this.cY, 150f, 20f), this.listWeapons[index1]._name, this.labelStyle);                
-                if (this.listWeapons[index1]._name.Equals("Arrows") || this.listWeapons[index1]._name.Equals("BombTimed") || this.listWeapons[index1]._name.Equals("dynamite") || this.listWeapons[index1]._name.Equals("FlareGunAmmo") || this.listWeapons[index1]._name.Equals("FlintlockAmmo") || this.listWeapons[index1]._name.Equals("Molotov"))
-                {
-                    if (GUI.Button(new Rect(170f, this.cY, 70f, 20f), "Add"))
+                    else if (GUI.Button(new Rect(210f, this.cY1, 150f, 20f), "Add"))
                     {
                         LocalPlayer.Inventory.AddItem(this.listWeapons[index1]._id, 1, false, false, null);
                     }
-                    if (GUI.Button(new Rect(250f, this.cY, 70f, 20f), "MAX"))
+                    this.cY1 = this.cY1 + 30f;
+                }
+                GUI.EndScrollView();
+            }
+            if (this.Tab == 1)
+            {
+                this.scPoItems = GUI.BeginScrollView(new Rect(5f, 45f, 390f, 370f), this.scPoItems, new Rect(0.0f, 0.0f, 330f, this.cY2));
+                this.cY2 = 25f;
+                //Items
+                for (int index = 0; index < this.listItems.Count; ++index)
+                {
+                    GUI.Label(new Rect(20f, this.cY2, 150f, 20f), this.listItems[index]._name, this.labelStyle);
+                    if (GUI.Button(new Rect(210f, this.cY2, 150f, 20f), "Add"))
                     {
-                        for (int index2 = 0; index2 < this.listWeapons.Count; ++index2)
+                        LocalPlayer.Inventory.AddItem(this.listItems[index]._id, 1, false, false, null);
+                    }
+                    this.cY2 = this.cY2 + 30f;
+                }
+                GUI.EndScrollView();
+            }            
+            if (this.Tab == 2)
+            {
+                this.scPoRes = GUI.BeginScrollView(new Rect(5f, 45f, 390f, 370f), this.scPoRes, new Rect(0.0f, 0.0f, 330f, this.cY3));
+                this.cY3 = 25f;
+                //Resource
+                for (int index1 = 0; index1 < this.listResources.Count; ++index1)
+                {
+                    GUI.Label(new Rect(20f, this.cY3, 150f, 20f), this.listResources[index1]._name, this.labelStyle);
+                    if (GUI.Button(new Rect(210f, this.cY3, 70f, 20f), "Add"))
+                    {
+                        LocalPlayer.Inventory.AddItem(this.listResources[index1]._id, 1, false, false, null);
+                    }
+                    if (GUI.Button(new Rect(290f, this.cY3, 70f, 20f), "MAX"))
+                    {
+                        for (int index2 = 0; index2 < this.listResources.Count; ++index2)
                         {
-                            LocalPlayer.Inventory.AddItem(this.listWeapons[index1]._id, this.listWeapons.Count, false, false, null);
+                            LocalPlayer.Inventory.AddItem(this.listResources[index1]._id, this.listResources.Count, false, false, null);
                         }
                     }
+                    this.cY3 = this.cY3 + 30f;
                 }
-                else if (GUI.Button(new Rect(170f, this.cY, 150f, 20f), "Add"))
-                {
-                    LocalPlayer.Inventory.AddItem(this.listWeapons[index1]._id, 1, false, false, null);
-                }
-                this.cY = this.cY + 30f;
+                GUI.EndScrollView();
             }
-
-            GUI.Label(new Rect(20f, this.cY, 150f, 20f), "[ Items ]", this.labelStyle);
-            this.cY = this.cY + 30f;
-
-            for (int index = 0; index < this.listItems.Count; ++index)
+            if (this.Tab == 3)
             {
-                GUI.Label(new Rect(20f, this.cY, 150f, 20f), this.listItems[index]._name, this.labelStyle);
-                if (GUI.Button(new Rect(170f, this.cY, 150f, 20f), "Add"))
+                this.scPoAnimalHeads = GUI.BeginScrollView(new Rect(5f, 45f, 390f, 370f), this.scPoAnimalHeads, new Rect(0.0f, 0.0f, 330f, this.cY4));
+                this.cY4 = 25f;
+                //AnimalHeads
+                for (int index = 0; index < this.listAnimalHeads.Count; ++index)
                 {
-                    LocalPlayer.Inventory.AddItem(this.listItems[index]._id, 1, false, false, null);
-                }
-                this.cY = this.cY + 30f;
-            }
-
-            GUI.EndScrollView();
-            this.scrollPosition2 = GUI.BeginScrollView(new Rect(350f, 45f, 350f, 550f), this.scrollPosition2, new Rect(0.0f, 0.0f, 330f, this.cY2));
-            this.cY2 = 25f;
-
-            GUI.Label(new Rect(20f, this.cY2, 150f, 20f), "[ Resources ]", this.labelStyle);
-            this.cY2 = this.cY2 + 30f;
-            for (int index1 = 0; index1 < this.listResources.Count; ++index1)
-            {
-                GUI.Label(new Rect(20f, this.cY2, 150f, 20f), this.listResources[index1]._name, this.labelStyle);
-                if (GUI.Button(new Rect(170f, this.cY2, 70f, 20f), "Add"))
-                {
-                    LocalPlayer.Inventory.AddItem(this.listResources[index1]._id, 1, false, false, null);
-                }
-                if (GUI.Button(new Rect(250f, this.cY2, 70f, 20f), "MAX"))
-                {
-                    for (int index2 = 0; index2 < this.listResources.Count; ++index2)
+                    GUI.Label(new Rect(20f, this.cY4, 150f, 20f), this.listAnimalHeads[index]._name, this.labelStyle);
+                    if (GUI.Button(new Rect(210f, this.cY4, 150f, 20f), "Add"))
                     {
-                        LocalPlayer.Inventory.AddItem(this.listResources[index1]._id, this.listResources.Count, false, false, null);
+                        LocalPlayer.Inventory.AddItem(this.listAnimalHeads[index]._id, 1, false, false, null);
+                    }
+                    this.cY4 = this.cY4 + 30f;
+                }
+                GUI.EndScrollView();
+            }
+            if (this.Tab == 4)
+            {
+                this.scPoOther = GUI.BeginScrollView(new Rect(5f, 45f, 390f, 370f), this.scPoOther, new Rect(0.0f, 0.0f, 330f, this.cY4));
+                this.cY4 = 25f;
+                //Other
+                for (int index = 0; index < this.listOther.Count; ++index)
+                {
+                    GUI.Label(new Rect(20f, this.cY4, 150f, 20f), this.listOther[index]._name, this.labelStyle);
+                    if (GUI.Button(new Rect(210f, this.cY4, 150f, 20f), "Add"))
+                    {
+                        LocalPlayer.Inventory.AddItem(this.listOther[index]._id, 1, false, false, null);
+                    }
+                    this.cY4 = this.cY4 + 30f;
+                }                
+                GUI.EndScrollView();
+            }
+            if (this.Tab ==5)
+            {
+                this.scPoAll = GUI.BeginScrollView(new Rect(5f, 45f, 390f, 370f), this.scPoAll, new Rect(0.0f, 0.0f, 330f, this.cY5));
+                this.cY5 = 25f;
+                //All Items
+                GUI.Label(new Rect(20f, this.cY5, 150f, 20f), "[ All Items ]", this.labelStyle);
+                if (GUI.Button(new Rect(100f, this.cY5, 70f, 20f), "Give all"))
+                {
+                    for (int i = 0; i < ItemDatabase.Items.Length; i++)
+                    {
+                        Item item = ItemDatabase.Items[i];
+                        try
+                        {
+                            if (item._maxAmount >= 0)
+                            {
+                                LocalPlayer.Inventory.AddItem(item._id, 1000 - LocalPlayer.Inventory.AmountOf(item._id, true), true, false, null);
+                            }
+                        }
+                        catch (Exception)
+                        { }
                     }
                 }
-                this.cY2 = this.cY2 + 30f;
-            }
 
-            GUI.Label(new Rect(20f, this.cY2, 150f, 20f), "[ Other ]", this.labelStyle);
-            this.cY2 = this.cY2 + 30f;
-            for (int index = 0; index < this.listOther.Count; ++index)
-            {
-                GUI.Label(new Rect(20f, this.cY2, 150f, 20f), this.listOther[index]._name, this.labelStyle);
-                if (GUI.Button(new Rect(170f, this.cY2, 150f, 20f), "Add"))
+                this.cY5 = this.cY5 + 35f;
+                //list Items
+                GUI.Label(new Rect(20f, this.cY5, 150f, 20f), "[ List Items - item number ]", this.labelStyle);
+                this.cY5 = 55f;
+                foreach (Item item in ItemDatabase.Items.OrderBy((Item i) => i._name))
                 {
-                    LocalPlayer.Inventory.AddItem(this.listOther[index]._id, 1, false, false, null);
+                    this.cY5 = this.cY5 + 30f;
+                    string text = item._name + " [" + item._id + "]";
+                    GUI.Label(new Rect(20f, this.cY5, 150f, 20f), text, this.labelStyle);
                 }
-                this.cY2 = this.cY2 + 30f;
+                GUI.EndScrollView();
+                GUI.matrix = matrix;
             }
-
-            GUI.Label(new Rect(20f, this.cY2, 150f, 20f), "[ Heads ]", this.labelStyle);
-            this.cY2 = this.cY2 + 30f;
-            for (int index = 0; index < this.listAnimals.Count; ++index)
-            {
-                GUI.Label(new Rect(20f, this.cY2, 150f, 20f), this.listAnimals[index]._name, this.labelStyle);
-                if (GUI.Button(new Rect(170f, this.cY2, 150f, 20f), "Add"))
-                {
-                    LocalPlayer.Inventory.AddItem(this.listAnimals[index]._id, 1, false, false, null);
-                }
-                this.cY2 = this.cY2 + 30f;
-            }
-
-            GUI.EndScrollView();
-            GUI.matrix = matrix;
         }
 
         private void GenerateList()
