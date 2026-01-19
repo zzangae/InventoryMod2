@@ -10,6 +10,11 @@ Inventory Mod 2 provides abilities to add more than one of certain items and has
 
 ## Changelog
 
+### 1.0.73.8 fix
+#### MaxAmount 버튼
+* 0 이상 : Add + MAX
+* 0 이하 : Add만
+
 ### 1.0.73.8
 - GUI 코드 리팩토링
 - flintlockAmmo MAX 버튼 추가
