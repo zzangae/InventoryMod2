@@ -16,12 +16,6 @@ namespace InventoryMod2
 
         private readonly string[] tabNames = { "Weapons", "Items", "Res.", "Head", "Other", "All" };
 
-        private readonly HashSet<string> stackableItems = new HashSet<string>
-        {
-            "Arrows", "ArrowFire", "PoisonnedArrow", "BombTimed",
-            "dynamite", "FlareGunAmmo", "flintlockAmmo", "Molotov", "CrossbowAmmo"
-        };
-
         private readonly string[] catWeapons = {
             "arrow", "axe", "ArrowFire", "bow", "bomb", "club",
             "PoisonnedArrow", "katana", "flaregun", "molotov", "dynamite",
@@ -160,12 +154,11 @@ namespace InventoryMod2
             }
             else
             {
-                bool showMaxButton = (tab == 0 || tab == 2);
-                RenderItemList(tab, categoryItems[tab], showMaxButton);
+                RenderItemList(tab, categoryItems[tab]);
             }
         }
 
-        private void RenderItemList(int tabIndex, List<Item> items, bool showMaxButton)
+        private void RenderItemList(int tabIndex, List<Item> items)
         {
             float contentHeight = 25f + (items.Count * ITEM_HEIGHT);
 
@@ -178,19 +171,17 @@ namespace InventoryMod2
             float yPos = 25f;
             foreach (var item in items)
             {
-                RenderItemRow(item, ref yPos, showMaxButton);
+                RenderItemRow(item, ref yPos);
             }
 
             GUI.EndScrollView();
         }
 
-        private void RenderItemRow(Item item, ref float yPos, bool showMaxButton)
+        private void RenderItemRow(Item item, ref float yPos)
         {
             GUI.Label(new Rect(20f, yPos, LABEL_WIDTH, 20f), item._name, labelStyle);
 
-            bool isStackable = showMaxButton && stackableItems.Contains(item._name);
-
-            if (isStackable)
+            if (item._maxAmount > 0)
             {
                 if (GUI.Button(new Rect(210f, yPos, BUTTON_WIDTH, 20f), "Add"))
                 {
